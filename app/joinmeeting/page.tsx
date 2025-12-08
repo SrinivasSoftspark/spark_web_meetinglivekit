@@ -154,7 +154,7 @@ export default function JoinMeetingPage() {
               {loading ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Join Meeting"}
             </Button>
 
-                <Tooltip title="Go to Join Meeting">
+                <Tooltip title="Go to Create Meeting">
                                 <Button onClick={handleCreate}>Create Meeting</Button>
                                   </Tooltip>
 
