@@ -1,65 +1,218 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import {
+  TextField,
+  Button,
+  Container,
+  Typography,
+  Box,
+  Paper,
+  Alert,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+  Stack,
+} from "@mui/material";
+import { motion } from "framer-motion";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+
+export default function CreateMeetingPage() {
+  const router = useRouter();
+
+  const [meetingName, setMeetingName] = useState("");
+  const [hostName, setHostName] = useState("");
+  const [meetingId, setMeetingId] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const createMeeting = async () => {
+    setError("");
+    if (!meetingName || !hostName) {
+      setError("Please enter both Meeting Name and Host Name");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await axios.post("http://192.168.1.65:4004/api/meeting/livekit-token", {
+        roomName: meetingName,
+        userName: hostName,
+      });
+
+      const data = res.data;
+      if (data.success) {
+       router.push(`/roommeeting/${data.token.token}/${encodeURIComponent(data.token.url)}/${data.token.identity}`);
+      } else {
+        setError(data.error || "Failed to create meeting");
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.response?.data?.error || "Error creating meeting");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (meetingId) {
+      await navigator.clipboard.writeText(meetingId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleJoin = () => {
+ 
+      router.push(`/joinmeeting`);
+  
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <Box
+      sx={{
+        background: "linear-gradient(135deg, #4a90e2 0%, #0056b3 100%)",
+      }}
+    >
+      <Container
+        maxWidth="sm"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          style={{ width: "100%" }}
+        >
+          <Paper
+            elevation={8}
+            sx={{
+              p: 5,
+              borderRadius: 3,
+              backgroundColor: "#ffffffee",
+              backdropFilter: "blur(6px)",
+            }}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            <Typography
+              variant="h4"
+              align="center"
+              fontWeight={700}
+              sx={{ mb: 2, color: "#0d47a1" }}
+            >
+              Create a Meeting
+            </Typography>
+
+            <Typography
+              variant="body2"
+              align="center"
+              sx={{ color: "text.secondary", mb: 3 }}
+            >
+              Set up a new meeting and share the generated Meeting ID
+            </Typography>
+
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <TextField
+                label="Meeting Name"
+                variant="outlined"
+                value={meetingName}
+                onChange={(e) => setMeetingName(e.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Host Name"
+                variant="outlined"
+                value={hostName}
+                onChange={(e) => setHostName(e.target.value)}
+                fullWidth
+              />
+
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={createMeeting}
+                disabled={loading}
+                sx={{
+                  py: 1.3,
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  background: "linear-gradient(90deg, #1565c0, #1976d2)",
+                  boxShadow: "0 3px 10px rgba(21,101,192,0.3)",
+                  textTransform: "none",
+                  "&:hover": {
+                    background: "linear-gradient(90deg, #0d47a1, #1565c0)",
+                  },
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} sx={{ color: "#fff" }} />
+                ) : (
+                  "Create Meeting"
+                )}
+              </Button>
+
+                     <Tooltip title="Go to Join Meeting">
+                    <Button onClick={handleJoin}>Join Meeting</Button>
+                      </Tooltip>
+
+              {error && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <Alert severity="error">{error}</Alert>
+                </motion.div>
+              )}
+
+              {meetingId && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Alert
+                    severity="success"
+                    sx={{
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 1,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <span>Meeting Created Successfully!</span>
+                      <strong>ID:</strong> {meetingId}
+                    </Stack>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Tooltip title={copied ? "Copied!" : "Copy Meeting ID"}>
+                        <IconButton
+                          color={copied ? "success" : "primary"}
+                          onClick={handleCopy}
+                          size="small"
+                          sx={{ ml: 1 }}
+                        >
+                          {copied ? <CheckIcon /> : <ContentCopyIcon />}
+                        </IconButton>
+                      </Tooltip>
+
+               
+                    </Box>
+                  </Alert>
+                </motion.div>
+              )}
+            </Box>
+          </Paper>
+        </motion.div>
+      </Container>
+    </Box>
   );
 }
