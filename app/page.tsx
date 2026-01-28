@@ -40,7 +40,7 @@ export default function CreateMeetingPage() {
 
     try {
       setLoading(true);
-      const res = await axios.post("http://192.168.1.65:4004/api/meeting/livekit-token", {
+      const res = await axios.post("https://officeapi.softspark.org/api/meeting/livekit-token", {
         roomName: meetingName,
         userName: hostName,
       });

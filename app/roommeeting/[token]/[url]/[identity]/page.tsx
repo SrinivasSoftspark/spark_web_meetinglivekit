@@ -36,7 +36,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import ChatIcon from "@mui/icons-material/Chat";
 import PeopleIcon from "@mui/icons-material/People";
 
-import { RoomEvent } from "livekit-client";
+import { RoomEvent, Track } from "livekit-client";
 
 export default function RoomMeeting() {
   const router = useRouter();
@@ -182,7 +182,6 @@ function RoomContent({ router, identity }: { router: any; identity: string }) {
             screenShare: true,
             leave: false,
           }}
-          showDeviceMenu={false}
           style={{
             display: "flex",
             flexDirection: "row",
@@ -316,19 +315,18 @@ function RoomContent({ router, identity }: { router: any; identity: string }) {
 /* ---------------------- SHARED SUBCOMPONENTS ---------------------- */
 
 function AudioTracks() {
-  const tracks = useTracks([{ source: "microphone" }], {
-    updateOnlyOn: ["subscribed"],
-  });
+  const tracks = useTracks([{ source: Track.Source.Microphone, withPlaceholder: false }]);
 
   useEffect(() => {
     tracks.forEach((t) => {
+      if (!t.publication) return;
       const mediaTrack =
         t.publication.audioTrack?.mediaStreamTrack ||
         t.publication.track?.mediaStreamTrack;
       if (!mediaTrack) return;
 
       let el = document.getElementById(
-        t.publication.trackSid
+        t.publication?.trackSid || ""
       ) as HTMLAudioElement | null;
       if (!el) {
         el = document.createElement("audio");
@@ -345,6 +343,7 @@ function AudioTracks() {
 
     return () => {
       tracks.forEach((t) => {
+        if (!t.publication) return;
         const el = document.getElementById(
           t.publication.trackSid
         ) as HTMLAudioElement | null;
@@ -365,16 +364,16 @@ function MainVideoGrid({
   currentSpeakerForCC,
 }: {
   ccEnabled: boolean;
-  setCurrentSpeakerForCC: (identity: string) => void;
+  setCurrentSpeakerForCC: (identity: string | null) => void;
   currentSpeakerForCC: string | null;
 }) {
   const tracks = useTracks(
     [
-      { source: "screen_share", withPlaceholder: false },
-      { source: "camera", withPlaceholder: true },
-      { source: "microphone" },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.Microphone, withPlaceholder: false },
     ],
-    { updateOnlyOn: ["subscribed", "speaking"] }
+    { updateOnlyOn: [RoomEvent.TrackSubscribed, RoomEvent.ParticipantMetadataChanged] }
   );
 
   const screenTrack = tracks.find((t) => t.source === "screen_share");
@@ -419,22 +418,12 @@ function MainVideoGrid({
             style={{ width: "100%", height: "100%", objectFit: "contain" }}
           />
         ) : cameraTracks[0] ? (
-          <ParticipantTile
-            trackRef={cameraTracks[0]}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            noVideoPlaceholder={
-              <Avatar
-                sx={{
-                  width: "100%",
-                  height: "100%",
-                  bgcolor: "#334155",
-                  fontSize: "2rem",
-                }}
-              >
-                {cameraTracks[0].participant.identity.charAt(0).toUpperCase()}
-              </Avatar>
-            }
-          />
+          <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+            <ParticipantTile
+              trackRef={cameraTracks[0]}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          </Box>
         ) : (
           <Typography color="white">No video</Typography>
         )}
@@ -504,18 +493,6 @@ function SideVideo({
       <ParticipantTile
         trackRef={track}
         style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        noVideoPlaceholder={
-          <Avatar
-            sx={{
-              width: "100%",
-              height: "100%",
-              bgcolor: "#334155",
-              fontSize: "2rem",
-            }}
-          >
-            {track.participant.identity.charAt(0).toUpperCase()}
-          </Avatar>
-        }
       />
     </Paper>
   );
@@ -523,24 +500,20 @@ function SideVideo({
 
 function ParticipantsList() {
   const participants = useParticipants();
+
   return (
-    <Box sx={{ p: 1 }}>
-      <Typography variant="subtitle1" sx={{ mb: 1 }}>
-        Participants ({participants.length})
-      </Typography>
-      <List dense>
-        {participants.map((p) => (
-          <ListItem key={p.identity}>
-            <ListItemAvatar>
-              <Avatar sx={{ bgcolor: "#334155" }}>
-                {p.identity.charAt(0).toUpperCase()}
-              </Avatar>
-            </ListItemAvatar>
-            <ListItemText primary={p.identity} />
-          </ListItem>
-        ))}
-      </List>
-    </Box>
+    <List>
+      {participants.map((p) => (
+        <ListItem key={p.identity}>
+          <ListItemAvatar>
+            <Avatar sx={{ bgcolor: "#334155" }}>
+              {p.identity.charAt(0).toUpperCase()}
+            </Avatar>
+          </ListItemAvatar>
+          <ListItemText primary={p.identity} />
+        </ListItem>
+      ))}
+    </List>
   );
 }
 
